@@ -3,6 +3,8 @@ package repositories
 import (
 	"errors"
 	"gin-fleamarket/models"
+
+	"gorm.io/gorm"
 )
 
 type IItemRepository interface {
@@ -58,4 +60,50 @@ func (r *ItemMemoryRepository) Delete(itemId uint) error {
 		}
 	}
 	return errors.New("Item not found")
+}
+
+// DB保存用の構造体を以下から定義
+type ItemRepository struct {
+	db *gorm.DB
+}
+
+func NewItemRepository(db *gorm.DB) IItemRepository {
+	return &ItemRepository{db: db}
+}
+
+func (r *ItemRepository) FindAll() (*[]models.Item, error) {
+	var items []models.Item
+	if err := r.db.Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return &items, nil
+}
+
+func (r *ItemRepository) FindById(itemId uint) (*models.Item, error) {
+	var item models.Item
+	if err := r.db.First(&item, itemId).Error; err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+func (r *ItemRepository) Create(newItem models.Item) (*models.Item, error) {
+	if err := r.db.Create(&newItem).Error; err != nil {
+		return nil, err
+	}
+	return &newItem, nil
+}
+
+func (r *ItemRepository) Update(updateItem models.Item) (*models.Item, error) {
+	if err := r.db.Save(&updateItem).Error; err != nil {
+		return nil, err
+	}
+	return &updateItem, nil
+}
+
+func (r *ItemRepository) Delete(itemId uint) error {
+	if err := r.db.Delete(&models.Item{}, itemId).Error; err != nil {
+		return err
+	}
+	return nil
 }
